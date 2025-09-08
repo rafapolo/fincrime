@@ -9,11 +9,83 @@ class CPFNetworkVisualization {
     this.labelPositions = [];
     this.showLabels = true; // Default to showing labels
 
+    // Qualificacao socio mapping
+    this.qualificacaoSocioMap = {
+      0: "Não informada",
+      5: "Administrador",
+      8: "Conselheiro de Administração",
+      9: "Curador",
+      10: "Diretor",
+      11: "Interventor",
+      12: "Inventariante",
+      13: "Liquidante",
+      14: "Mãe",
+      15: "Pai",
+      16: "Presidente",
+      17: "Procurador",
+      18: "Secretário",
+      19: "Síndico (Condomínio)",
+      20: "Sociedade Consorciada",
+      21: "Sociedade Filiada",
+      22: "Sócio",
+      23: "Sócio Capitalista",
+      24: "Sócio Comanditado",
+      25: "Sócio Comanditário",
+      26: "Sócio de Indústria",
+      28: "Sócio-Gerente",
+      29: "Sócio Incapaz ou Relat.Incapaz (exceto menor)",
+      30: "Sócio Menor (Assistido/Representado)",
+      31: "Sócio Ostensivo",
+      32: "Tabelião",
+      33: "Tesoureiro",
+      34: "Titular de Empresa Individual Imobiliária",
+      35: "Tutor",
+      37: "Sócio Pessoa Jurídica Domiciliado no Exterior",
+      38: "Sócio Pessoa Física Residente no Exterior",
+      39: "Diplomata",
+      40: "Cônsul",
+      41: "Representante de Organização Internacional",
+      42: "Oficial de Registro",
+      43: "Responsável",
+      46: "Ministro de Estado das Relações Exteriores",
+      47: "Sócio Pessoa Física Residente no Brasil",
+      48: "Sócio Pessoa Jurídica Domiciliado no Brasil",
+      49: "Sócio-Administrador",
+      50: "Empresário",
+      51: "Candidato a cargo Político Eletivo",
+      52: "Sócio com Capital",
+      53: "Sócio sem Capital",
+      54: "Fundador",
+      55: "Sócio Comanditado Residente no Exterior",
+      56: "Sócio Comanditário Pessoa Física Residente no Exterior",
+      57: "Sócio Comanditário Pessoa Jurídica Domiciliado no Exterior",
+      58: "Sócio Comanditário Incapaz",
+      59: "Produtor Rural",
+      60: "Cônsul Honorário",
+      61: "Responsável indígena",
+      62: "Representante da Instituição Extraterritorial",
+      63: "Cotas em Tesouraria",
+      64: "Administrador Judicial",
+      65: "Titular Pessoa Física Residente ou Domiciliado no Brasil",
+      66: "Titular Pessoa Física Residente ou Domiciliado no Exterior",
+      67: "Titular Pessoa Física Incapaz ou Relativamente Incapaz (exceto menor)",
+      68: "Titular Pessoa Física Menor (Assistido/Representado)",
+      69: "Beneficiário Final",
+      70: "Administrador Residente ou Domiciliado no Exterior",
+      71: "Conselheiro de Administração Residente ou Domiciliado no Exterior",
+      72: "Diretor Residente ou Domiciliado no Exterior",
+      73: "Presidente Residente ou Domiciliado no Exterior",
+      74: "Sócio-Administrador Residente ou Domiciliado no Exterior",
+      75: "Fundador Residente ou Domiciliado no Exterior",
+      78: "Titular Pessoa Jurídica Domiciliada no Brasil",
+      79: "Titular Pessoa Jurídica Domiciliada no Exterior",
+    };
+
     // Fixed simulation parameters - expanded view
     this.simulationParams = {
-      linkDistance: 280,
+      linkDistance: 680,
       chargeStrength: -800,
-      linkStrength: 0.05,
+      linkStrength: 0.015,
       alphaDecay: 0.015,
     };
 
@@ -179,6 +251,10 @@ class CPFNetworkVisualization {
     // No sliders to set up
   }
 
+  getQualificacaoDescription(codigo) {
+    return this.qualificacaoSocioMap[codigo] || "Não informada";
+  }
+
   updateSimulation() {
     if (this.simulation) {
       console.log("Updating simulation with params:", this.simulationParams);
@@ -319,6 +395,21 @@ class CPFNetworkVisualization {
           "links",
         );
 
+        // Debug: Check qualificacao_socio in loaded data
+        const linksWithQualificacao = this.data.links.filter(
+          (link) =>
+            link.qualificacao_socio !== undefined &&
+            link.qualificacao_socio !== null,
+        );
+        console.log(
+          `Found ${linksWithQualificacao.length} links with qualificacao_socio data`,
+        );
+
+        // Sample first few links with qualificacao_socio
+        linksWithQualificacao.slice(0, 3).forEach((link, i) => {
+          console.log(`Sample link ${i}:`, link);
+        });
+
         this.processData();
         this.initializeSimulation();
         this.updateStats();
@@ -411,6 +502,9 @@ class CPFNetworkVisualization {
     if (this.showLabels || this.selectedNode) {
       this.drawLabels();
     }
+
+    // Draw edge labels (always draw them when data is available)
+    this.drawEdgeLabels();
 
     this.context.restore();
   }
@@ -731,6 +825,84 @@ class CPFNetworkVisualization {
     );
   }
 
+  drawEdgeLabels() {
+    if (!this.data || !this.data.links) {
+      console.log("No data or links available for edge labels");
+      return;
+    }
+
+    // Debug: Log total links
+    console.log(`Drawing edge labels for ${this.data.links.length} links`);
+
+    // Configure edge label styling
+    this.context.fillStyle = "#ffffff";
+    this.context.strokeStyle = "#000000";
+    this.context.lineWidth = 3;
+    this.context.textAlign = "center";
+    this.context.textBaseline = "middle";
+
+    // Use larger font size for visibility
+    const baseFontSize = Math.max(12, Math.min(16, 12 + this.transform.k * 2));
+    this.context.font = `${baseFontSize}px Arial`;
+
+    let labelsDrawn = 0;
+    let linksWithQualificacao = 0;
+
+    this.data.links.forEach((link, index) => {
+      // Debug: Check first few links
+      if (index < 5) {
+        console.log(`Link ${index}:`, link);
+      }
+
+      // Check if link has qualificacao_socio data
+      if (
+        link.qualificacao_socio !== undefined &&
+        link.qualificacao_socio !== null
+      ) {
+        linksWithQualificacao++;
+
+        // Get qualificacao description
+        const qualificacaoDesc = this.getQualificacaoDescription(
+          link.qualificacao_socio,
+        );
+
+        // Debug first few descriptions
+        if (linksWithQualificacao <= 5) {
+          console.log(
+            `Qualificacao ${link.qualificacao_socio}: ${qualificacaoDesc}`,
+          );
+        }
+
+        // Skip only "Não informada" but show everything else
+        if (qualificacaoDesc && qualificacaoDesc !== "Não informada") {
+          // Calculate edge midpoint
+          const midX = (link.source.x + link.target.x) / 2;
+          const midY = (link.source.y + link.target.y) / 2;
+
+          // Simple text without complex positioning
+          const text =
+            qualificacaoDesc.length > 15
+              ? qualificacaoDesc.substring(0, 15) + "..."
+              : qualificacaoDesc;
+
+          // Use bright colors for visibility
+          this.context.fillStyle = "#ffff00"; // Bright yellow
+          this.context.strokeStyle = "#000000"; // Black outline
+
+          // Draw text with outline
+          this.context.strokeText(text, midX, midY);
+          this.context.fillText(text, midX, midY);
+
+          labelsDrawn++;
+        }
+      }
+    });
+
+    console.log(
+      `Edge labels summary: ${linksWithQualificacao} links with qualificacao_socio, ${labelsDrawn} labels drawn`,
+    );
+  }
+
   selectNode(node) {
     this.selectedNode = node;
     this.redraw();
@@ -819,13 +991,37 @@ class CPFNetworkVisualization {
             );
           }).length;
 
+          // Find the link between current node and connected node to get qualificacao_socio
+          const linkBetweenNodes = this.data.links.find((link) => {
+            const sourceId =
+              typeof link.source === "object" ? link.source.id : link.source;
+            const targetId =
+              typeof link.target === "object" ? link.target.id : link.target;
+            return (
+              (sourceId === node.id && targetId === connectedNode.id) ||
+              (sourceId === connectedNode.id && targetId === node.id)
+            );
+          });
+
+          // Get qualificacao description if available
+          let qualificacaoText = "";
+          if (
+            linkBetweenNodes &&
+            linkBetweenNodes.qualificacao_socio !== undefined
+          ) {
+            const qualificacaoDesc = this.getQualificacaoDescription(
+              linkBetweenNodes.qualificacao_socio,
+            );
+            qualificacaoText = ` - ${qualificacaoDesc}`;
+          }
+
           const nodeId = connectedNode.id;
           console.log("Creating connection item:", {
             nodeId,
             type: typeof nodeId,
             label: connectedNode.label,
           });
-          return `<li class="${itemClass}" data-node-id="${nodeId}">${connectedNode.label} (${nodeConnectionCount})</li>`;
+          return `<li class="${itemClass}" data-node-id="${nodeId}">${connectedNode.label} (${nodeConnectionCount})${qualificacaoText}</li>`;
         })
         .join("");
 
