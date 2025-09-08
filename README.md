@@ -6,6 +6,7 @@
 
 O **Redes Obscuras** é uma aplicação de visualização interativa para análise de redes empresariais, focada nas conexões entre empresas REAG e suas sociedades. A ferramenta permite identificar padrões de relacionamento complexos em redes financeiras obscuras, facilitando investigações de crimes financeiros e lavagem de dinheiro.
 
+=> [FinCrime App](https://rafapolo.github.io/fincrime/)
 ## 🚀 Funcionalidades
 
 ### 🎯 **Visualização Interativa**
