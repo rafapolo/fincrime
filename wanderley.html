@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Redes Obscuras - Eduardo Monteiro Wanderley Network</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Barlow:wght@400&display=swap"
+            rel="stylesheet"
+        />
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: "Barlow", sans-serif;
+                background: #1a1a1a;
+                color: #fff;
+                overflow: hidden;
+                height: 100vh;
+                width: 100vw;
+            }
+
+            .container {
+                position: relative;
+                width: 100vw;
+                height: 100vh;
+            }
+
+            .top-controls {
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                z-index: 1000;
+                background-color: #030f25;
+                padding: 20px;
+                border-radius: 10px;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgb(255 255 255 / 22%);
+                max-width: 350px;
+            }
+
+            .top-controls h1 {
+                margin: 0 0 10px 0;
+                font-size: 24px;
+                font-weight: 300;
+                color: #fff;
+            }
+
+            .top-controls h3 {
+                margin: 0 0 15px 0;
+                font-size: 14px;
+                color: rgba(255, 255, 255, 0.7);
+                font-weight: 400;
+            }
+
+            input[type="text"] {
+                background: rgba(255, 255, 255, 0.1);
+                color: #fff;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                padding: 10px 12px;
+                border-radius: 6px;
+                width: 100%;
+                font-size: 13px;
+                backdrop-filter: blur(10px);
+                margin-bottom: 15px;
+            }
+
+            input[type="text"]:focus {
+                outline: none;
+                border-color: rgba(255, 255, 255, 0.4);
+                background: rgba(255, 255, 255, 0.15);
+            }
+
+            input[type="text"]::placeholder {
+                color: rgba(255, 255, 255, 0.6);
+            }
+
+            .toggle-container {
+                margin: 8px 0;
+            }
+
+            .toggle-label {
+                display: flex;
+                align-items: center;
+                cursor: pointer;
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.8);
+            }
+
+            .toggle-label input[type="checkbox"] {
+                width: 16px;
+                height: 16px;
+                margin-right: 8px;
+                cursor: pointer;
+                accent-color: green;
+            }
+
+            .toggle-text {
+                user-select: none;
+            }
+
+            .slider-container {
+                margin: 12px 0;
+            }
+
+            .slider-label {
+                display: block;
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.8);
+                margin-bottom: 5px;
+                font-weight: 500;
+                padding-bottom: 3px;
+            }
+
+            .slider-wrapper {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            input[type="range"] {
+                flex: 1;
+                height: 4px;
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: 2px;
+                outline: none;
+                -webkit-appearance: none;
+                appearance: none;
+            }
+
+            input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 16px;
+                height: 16px;
+                background: green;
+                border-radius: 50%;
+                cursor: pointer;
+                box-shadow: 0 0 4px rgba(255, 0, 0, 0.5);
+            }
+
+            input[type="range"]::-moz-range-thumb {
+                width: 16px;
+                height: 16px;
+                background: lightgreen;
+                border-radius: 50%;
+                cursor: pointer;
+                border: none;
+                box-shadow: 0 0 4px rgba(255, 0, 0, 0.5);
+            }
+
+            .slider-value {
+                min-width: 40px;
+                font-size: 11px;
+                color: rgba(255, 255, 255, 0.6);
+                text-align: right;
+            }
+
+            .controls-section {
+                margin-top: 15px;
+                padding-top: 15px;
+                border-top: 1px solid rgba(255, 255, 255, 0.2);
+            }
+
+            .section-title {
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.9);
+                margin-bottom: 10px;
+                font-weight: 600;
+            }
+
+            .legend {
+                margin-top: 15px;
+                padding-top: 15px;
+                border-top: 1px solid rgba(255, 255, 255, 0.2);
+            }
+
+            .legend-item {
+                display: flex;
+                align-items: center;
+                margin: 8px 0;
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.8);
+            }
+
+            .legend-color {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                margin-right: 8px;
+            }
+
+            .legend-purple {
+                background: #800080;
+            }
+            .legend-orange {
+                background: #ffa500;
+            }
+
+            .loading {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 1001;
+                font-size: 18px;
+                color: #ff0000;
+                background: rgba(0, 0, 0, 0.8);
+                padding: 20px 30px;
+                border-radius: 10px;
+                border: 1px solid #ff0000;
+            }
+
+            .stats {
+                margin-top: 15px;
+                padding-top: 15px;
+                border-top: 1px solid rgba(255, 255, 255, 0.2);
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.8);
+            }
+
+            .stats-title {
+                font-weight: 600;
+                color: #fff;
+                margin-bottom: 10px;
+                font-size: 13px;
+            }
+
+            .stat-line {
+                display: flex;
+                justify-content: space-between;
+                margin: 6px 0;
+                padding: 2px 0;
+            }
+
+            .stat-label {
+                color: rgba(255, 255, 255, 0.7);
+            }
+
+            .stat-number {
+                color: #fff;
+                font-weight: 500;
+                font-family: "Courier New", monospace;
+            }
+
+            #network-canvas {
+                width: 100vw;
+                height: 100vh;
+                display: block;
+                background: radial-gradient(circle, #071736, #0f0d0d);
+            }
+
+            .node-info {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                bottom: 20px;
+                width: 400px;
+                background-color: #030f25;
+                border: 1px solid rgb(255 255 255 / 22%);
+                border-radius: 10px;
+                backdrop-filter: blur(10px);
+                z-index: 1000;
+                overflow: hidden;
+                display: none;
+                flex-direction: column;
+            }
+
+            .node-info-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 15px 20px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+                background: rgba(255, 255, 255, 0.05);
+            }
+
+            .node-info-header h3 {
+                margin: 0;
+                font-size: 16px;
+                color: #fff;
+                font-weight: 500;
+            }
+
+            #closeNodeInfo {
+                background: none;
+                border: none;
+                color: rgba(255, 255, 255, 0.7);
+                font-size: 24px;
+                cursor: pointer;
+                padding: 0;
+                width: 30px;
+                height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                transition: all 0.2s ease;
+            }
+
+            #closeNodeInfo:hover {
+                background: rgba(255, 255, 255, 0.1);
+                color: #fff;
+            }
+
+            #nodeInfoContent {
+                padding: 20px;
+                flex: 1;
+                overflow-y: auto;
+                font-size: 13px;
+                line-height: 1.5;
+                color: rgba(255, 255, 255, 0.9);
+                scroll-behavior: smooth;
+                min-height: 0;
+                height: 100%;
+            }
+
+            .node-details {
+                margin-bottom: 20px;
+            }
+
+            .node-name {
+                font-size: 16px;
+                font-weight: 600;
+                color: #fff;
+                margin-bottom: 10px;
+                word-break: break-word;
+            }
+
+            .node-type {
+                display: inline-block;
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 500;
+                margin-bottom: 15px;
+            }
+
+            .node-type.person {
+                background: rgba(128, 0, 128, 0.2);
+                color: #c084fc;
+                border: 1px solid rgba(128, 0, 128, 0.3);
+            }
+
+            .node-type.company {
+                background: rgba(255, 165, 0, 0.2);
+                color: #fbbf24;
+                border: 1px solid rgba(255, 165, 0, 0.3);
+            }
+
+            .connections-section {
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                padding-top: 15px;
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                min-height: 0;
+                overflow: hidden;
+            }
+
+            .connections-header {
+                font-weight: 600;
+                color: #fff;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .connection-count {
+                background: rgba(255, 255, 255, 0.1);
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-size: 11px;
+                color: rgba(255, 255, 255, 0.8);
+            }
+
+            .connections-list {
+                flex: 1;
+                overflow-y: auto;
+                padding-bottom: 50px;
+                scroll-behavior: smooth;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+                padding-right: 4px;
+                margin-right: -4px;
+                list-style: none;
+                padding-left: 0;
+                margin: 0;
+                padding-bottom: 8px;
+            }
+
+            .connections-list::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            .connections-list::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            .connections-list::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 3px;
+            }
+
+            .connections-list::-webkit-scrollbar-thumb:hover {
+                background: rgba(255, 255, 255, 0.5);
+            }
+
+            .connection-item {
+                padding: 8px 12px 8px 24px;
+                margin: 2px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 4px;
+                color: rgba(255, 255, 255, 0.8);
+                word-break: break-word;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                background: rgba(255, 255, 255, 0.02);
+                min-height: 32px;
+                display: flex;
+                align-items: center;
+                position: relative;
+                list-style: none;
+            }
+
+            .connection-item::before {
+                content: "•";
+                position: absolute;
+                left: 12px;
+                color: rgba(255, 255, 255, 0.6);
+                font-size: 14px;
+            }
+
+            .connection-item:focus {
+                outline: 2px solid rgba(0, 255, 136, 0.5);
+                outline-offset: -2px;
+            }
+
+            .connection-item:hover {
+                color: #00ff88;
+                background: rgba(0, 255, 136, 0.1);
+                transform: translateX(4px);
+            }
+
+            .connection-item:last-child {
+                border-bottom: none;
+            }
+
+            .connection-item.person {
+                color: #c084fc;
+            }
+
+            .connection-item.company {
+                color: #fbbf24;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="top-controls">
+                <h1>Redes Obscuras</h1>
+                <h3>Eduardo Monteiro Wanderley</h3>
+
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Buscar empresas e sócios..."
+                />
+
+                <div class="toggle-container">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="showLabelsToggle" checked />
+                        <span class="toggle-text">Mostrar nomes</span>
+                    </label>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color legend-purple"></div>
+                        <span>Pessoas/Sócios</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-orange"></div>
+                        <span>Empresas</span>
+                    </div>
+                </div>
+
+                <div class="stats" id="stats">
+                    <div>Carregando estatísticas...</div>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                Carregando rede de Eduardo Monteiro Wanderley...
+            </div>
+
+            <div class="node-info" id="nodeInfo">
+                <div class="node-info-header">
+                    <h3 id="nodeInfoTitle">Informações do Nó</h3>
+                    <button id="closeNodeInfo">×</button>
+                </div>
+                <div id="nodeInfoContent">
+                    Clique em um nó para ver suas informações e conexões.
+                </div>
+            </div>
+
+            <canvas id="network-canvas"></canvas>
+        </div>
+
+        <script src="cosmograph-viz-cpf.js"></script>
+    </body>
+</html>
