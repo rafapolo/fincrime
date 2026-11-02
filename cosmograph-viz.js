@@ -9,6 +9,78 @@ class FastNetworkVisualization {
     this.labelPositions = [];
     this.showLabels = true; // Default to showing labels
     
+    // Qualificacao socio mapping
+    this.qualificacaoSocioMap = {
+      0: "Não informada",
+      5: "Administrador",
+      8: "Conselheiro de Administração",
+      9: "Curador",
+      10: "Diretor",
+      11: "Interventor",
+      12: "Inventariante",
+      13: "Liquidante",
+      14: "Mãe",
+      15: "Pai",
+      16: "Presidente",
+      17: "Procurador",
+      18: "Secretário",
+      19: "Síndico (Condomínio)",
+      20: "Sociedade Consorciada",
+      21: "Sociedade Filiada",
+      22: "Sócio",
+      23: "Sócio Capitalista",
+      24: "Sócio Comanditado",
+      25: "Sócio Comanditário",
+      26: "Sócio de Indústria",
+      28: "Sócio-Gerente",
+      29: "Sócio Incapaz ou Relat.Incapaz (exceto menor)",
+      30: "Sócio Menor (Assistido/Representado)",
+      31: "Sócio Ostensivo",
+      32: "Tabelião",
+      33: "Tesoureiro",
+      34: "Titular de Empresa Individual Imobiliária",
+      35: "Tutor",
+      37: "Sócio Pessoa Jurídica Domiciliado no Exterior",
+      38: "Sócio Pessoa Física Residente no Exterior",
+      39: "Diplomata",
+      40: "Cônsul",
+      41: "Representante de Organização Internacional",
+      42: "Oficial de Registro",
+      43: "Responsável",
+      46: "Ministro de Estado das Relações Exteriores",
+      47: "Sócio Pessoa Física Residente no Brasil",
+      48: "Sócio Pessoa Jurídica Domiciliado no Brasil",
+      49: "Sócio-Administrador",
+      50: "Empresário",
+      51: "Candidato a cargo Político Eletivo",
+      52: "Sócio com Capital",
+      53: "Sócio sem Capital",
+      54: "Fundador",
+      55: "Sócio Comanditado Residente no Exterior",
+      56: "Sócio Comanditário Pessoa Física Residente no Exterior",
+      57: "Sócio Comanditário Pessoa Jurídica Domiciliado no Exterior",
+      58: "Sócio Comanditário Incapaz",
+      59: "Produtor Rural",
+      60: "Cônsul Honorário",
+      61: "Responsável indígena",
+      62: "Representante da Instituição Extraterritorial",
+      63: "Cotas em Tesouraria",
+      64: "Administrador Judicial",
+      65: "Titular Pessoa Física Residente ou Domiciliado no Brasil",
+      66: "Titular Pessoa Física Residente ou Domiciliado no Exterior",
+      67: "Titular Pessoa Física Incapaz ou Relativamente Incapaz (exceto menor)",
+      68: "Titular Pessoa Física Menor (Assistido/Representado)",
+      69: "Beneficiário Final",
+      70: "Administrador Residente ou Domiciliado no Exterior",
+      71: "Conselheiro de Administração Residente ou Domiciliado no Exterior",
+      72: "Diretor Residente ou Domiciliado no Exterior",
+      73: "Presidente Residente ou Domiciliado no Exterior",
+      74: "Sócio-Administrador Residente ou Domiciliado no Exterior",
+      75: "Fundador Residente ou Domiciliado no Exterior",
+      78: "Titular Pessoa Jurídica Domiciliada no Brasil",
+      79: "Titular Pessoa Jurídica Domiciliada no Exterior"
+    };
+    
     // Fixed simulation parameters 
     this.simulationParams = {
       linkDistance: 145,
@@ -155,6 +227,10 @@ class FastNetworkVisualization {
 
   setupSliderListeners() {
     // No sliders to set up
+  }
+
+  getQualificacaoDescription(codigo) {
+    return this.qualificacaoSocioMap[codigo] || "Não informada";
   }
 
   updateSimulation() {
@@ -370,6 +446,11 @@ class FastNetworkVisualization {
     // Draw labels if enabled OR if node is selected
     if (this.showLabels || this.selectedNode) {
       this.drawLabels();
+    }
+    
+    // Draw edge labels if zoom level is high enough
+    if (this.transform.k > 1.0) {
+      this.drawEdgeLabels();
     }
     
     this.context.restore();
@@ -672,6 +753,95 @@ class FastNetworkVisualization {
     );
   }
 
+  drawEdgeLabels() {
+    if (!this.data || !this.data.links) return;
+    
+    // Configure edge label styling
+    this.context.fillStyle = "#ffffff";
+    this.context.strokeStyle = "#000000";
+    this.context.lineWidth = 2;
+    this.context.textAlign = "center";
+    this.context.textBaseline = "middle";
+    
+    // Dynamic font size based on zoom
+    const baseFontSize = Math.max(8, Math.min(12, 8 + this.transform.k * 1.5));
+    this.context.font = `${baseFontSize}px Arial`;
+    
+    // Only show edge labels for selected connections or when zoomed in significantly
+    const showAllEdgeLabels = this.transform.k > 2.0;
+    
+    this.data.links.forEach((link) => {
+      // Skip links without qualificacao_socio data
+      if (!link.qualificacao_socio && link.qualificacao_socio !== 0) return;
+      
+      // Only show edge labels for connected links when a node is selected, or all when zoomed in
+      let shouldShowLabel = showAllEdgeLabels;
+      
+      if (this.selectedNode && !showAllEdgeLabels) {
+        const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+        const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+        const isConnectedToSelected = 
+          sourceId === this.selectedNode.id || 
+          targetId === this.selectedNode.id;
+        shouldShowLabel = isConnectedToSelected;
+      }
+      
+      if (!shouldShowLabel) return;
+      
+      // Get qualificacao description
+      const qualificacaoDesc = this.getQualificacaoDescription(link.qualificacao_socio);
+      
+      // Skip if no meaningful description
+      if (!qualificacaoDesc || qualificacaoDesc === "Não informada") return;
+      
+      // Calculate edge midpoint
+      const midX = (link.source.x + link.target.x) / 2;
+      const midY = (link.source.y + link.target.y) / 2;
+      
+      // Calculate edge angle for text rotation
+      const dx = link.target.x - link.source.x;
+      const dy = link.target.y - link.source.y;
+      const angle = Math.atan2(dy, dx);
+      
+      // Offset label slightly from edge center to avoid collision with edge
+      const offsetDistance = 15 / this.transform.k;
+      const offsetX = Math.sin(angle) * offsetDistance;
+      const offsetY = -Math.cos(angle) * offsetDistance;
+      
+      const labelX = midX + offsetX;
+      const labelY = midY + offsetY;
+      
+      // Truncate long descriptions
+      const maxLength = Math.max(10, 20 - (2 - this.transform.k) * 5);
+      const text = qualificacaoDesc.length > maxLength ? 
+        qualificacaoDesc.substring(0, maxLength) + "..." : 
+        qualificacaoDesc;
+      
+      // Set text color based on selection state
+      if (this.selectedNode) {
+        const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+        const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+        const isConnectedToSelected = 
+          sourceId === this.selectedNode.id || 
+          targetId === this.selectedNode.id;
+        if (isConnectedToSelected) {
+          this.context.fillStyle = "#00ff88"; // Green for selected connections
+          this.context.strokeStyle = "#000000";
+        } else {
+          this.context.fillStyle = "#cccccc"; // Dimmed for non-connected
+          this.context.strokeStyle = "#000000";
+        }
+      } else {
+        this.context.fillStyle = "#ffffff"; // White for normal state
+        this.context.strokeStyle = "#000000";
+      }
+      
+      // Draw text with outline (stroke first, then fill)
+      this.context.strokeText(text, labelX, labelY);
+      this.context.fillText(text, labelX, labelY);
+    });
+  }
+
   selectNode(node) {
     this.selectedNode = node;
     this.redraw();
@@ -743,9 +913,24 @@ class FastNetworkVisualization {
           return sourceId === connectedNode.id || targetId === connectedNode.id;
         }).length;
         
+        // Find the link between current node and connected node to get qualificacao_socio
+        const linkBetweenNodes = this.data.links.find(link => {
+          const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+          const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+          return (sourceId === node.id && targetId === connectedNode.id) ||
+                 (sourceId === connectedNode.id && targetId === node.id);
+        });
+        
+        // Get qualificacao description if available
+        let qualificacaoText = '';
+        if (linkBetweenNodes && linkBetweenNodes.qualificacao_socio !== undefined) {
+          const qualificacaoDesc = this.getQualificacaoDescription(linkBetweenNodes.qualificacao_socio);
+          qualificacaoText = ` - ${qualificacaoDesc}`;
+        }
+        
         const nodeId = connectedNode.id;
         console.log('Creating connection item:', { nodeId, type: typeof nodeId, label: connectedNode.label });
-        return `<li class="${itemClass}" data-node-id="${nodeId}">${connectedNode.label} (${nodeConnectionCount})</li>`;
+        return `<li class="${itemClass}" data-node-id="${nodeId}">${connectedNode.label} (${nodeConnectionCount})${qualificacaoText}</li>`;
       }).join('');
 
       connectionsHtml = `
